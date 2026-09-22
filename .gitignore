@@ -1,0 +1,144 @@
+# ============================================================================
+# INTERNAL AI-CONTEXT TRACKING FILES — never commit these
+# These exist purely to give future AI pair-programming sessions (Claude,
+# ChatGPT, Copilot Chat, etc.) continuity across sessions. They may contain
+# candid notes, half-finished thoughts, or internal reasoning that has no
+# place in the public/academic history of this repository.
+# ============================================================================
+memory.md
+decisions.md
+roadmap.md
+*.ai-context.md
+.ai/
+
+# ============================================================================
+# Dependencies
+# ============================================================================
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+bower_components/
+
+# ============================================================================
+# Build outputs / framework caches
+# ============================================================================
+dist/
+build/
+out/
+.next/
+.nuxt/
+.turbo/
+.vercel/
+.expo/
+.expo-shared/
+web-build/
+*.tsbuildinfo
+.eslintcache
+
+# ============================================================================
+# Environment & secrets — NEVER commit real credentials
+# ============================================================================
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.test
+!.env.example
+*.pem
+*.key
+firebase-service-account*.json
+google-services.json
+GoogleService-Info.plist
+
+# ============================================================================
+# Python / ai-engine service
+# ============================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+env/
+ENV/
+*.egg-info/
+.eggs/
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Trained model artifacts are large binaries and/or reproducible from
+# services/ai-engine/notebooks — do not version them. See
+# services/ai-engine/models/README.md for how to regenerate them.
+services/ai-engine/models/*.pkl
+services/ai-engine/models/*.joblib
+services/ai-engine/models/*.h5
+services/ai-engine/models/*.onnx
+services/ai-engine/models/*.pt
+services/ai-engine/models/*.safetensors
+
+# Raw datasets are downloaded on demand — see
+# services/ai-engine/datasets/README.md — never commit raw data dumps,
+# and NEVER commit real (non-synthetic) user financial exports.
+services/ai-engine/datasets/raw/
+services/ai-engine/datasets/*.csv
+services/ai-engine/datasets/*.zip
+
+# ============================================================================
+# Logs & debug
+# ============================================================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ============================================================================
+# Testing & coverage
+# ============================================================================
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# ============================================================================
+# OS files
+# ============================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+desktop.ini
+
+# ============================================================================
+# Editor / IDE
+# ============================================================================
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+.idea/
+*.swp
+*.swo
+*~
+
+# ============================================================================
+# Supabase local dev
+# ============================================================================
+.supabase/
+supabase/.temp/
+
+# ============================================================================
+# Misc
+# ============================================================================
+*.local
+.cache/
+.parcel-cache/
+.vercel
+.netlify
