@@ -104,16 +104,6 @@ pnpm dev
 | [`docs/testing-strategy.md`](./docs/testing-strategy.md) | Test pyramid, tools, coverage targets. |
 | [`docs/glossary.md`](./docs/glossary.md) | Terminology (ZBB, RLS, MCC, KIE, etc.). |
 
-## Internal AI tracking files
-
-Three files are used to keep AI coding assistants (and human teammates)
-oriented across sessions. They are **intentionally git-ignored** — they're
-working notes, not project documentation:
-
-- `memory.md` — current phase, what's done, what's next. **Read this first.**
-- `decisions.md` — Architecture Decision Records (ADRs): what we chose, what
-  we rejected, and why, always in the context of the $0 budget.
-- `roadmap.md` — the granular, phase-by-phase implementation plan.
 
 ## Contributing
 
