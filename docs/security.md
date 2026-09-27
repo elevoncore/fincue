@@ -11,23 +11,60 @@ financial institution. It does not hold funds, move money, or provide
 financial advice in a regulated sense. It should not be described, in the
 FYP report or otherwise, as PCI-DSS compliant, a licensed money
 transmitter, or a registered investment adviser — none of that is in
-scope, and claiming it would be inaccurate. What *is* in scope, and what
+scope, and claiming it would be inaccurate. What _is_ in scope, and what
 this document covers, is applying reasonable, industry-standard security
+practices to a project that handles personal financial data, because
+that's good engineering regardless of regulatory status — and because
+demonstrating that judgment is itself part of the FYP evaluation.
+
+### 1.1 The investment/market-data boundary specifically
+
+This needs its own explicit rule, because it's the one place in this
+project where getting the framing wrong has consequences beyond a bad
+demo. **Fincue never tells a user to buy, sell, hold, or avoid a specific
+security, and never characterizes its own output as predicting future
+prices.** This is not a style preference — apps that give personalized
+"do this with your money" guidance are, in essentially every jurisdiction
+with developed capital markets (the U.S. via the SEC, the UK via the FCA,
+Pakistan via SECP, India via SEBI, among others), operating as a
+regulated investment adviser, which requires licensing this project does
+not have and an FYP has no practical path to acquiring.
+
+What Fincue _does_ do, and what stays firmly on the legal side of that
+line: **explain and contextualize, never recommend.** "Your portfolio's
+tech-sector concentration is 40%, above the 20–25% range often cited as
+diversified" is analysis. "You should sell your tech stocks" is advice.
+Every AI-generated sentence about a user's investments must read like the
+first, never the second — see `docs/ml-strategy.md` §6 for exactly how
+this is enforced architecturally, not just stylistically. Every screen
+that surfaces AI-generated investment commentary carries a persistent,
+visible label to this effect (see `docs/user-guide.md`), modeled directly
+on how actual regulated brokerages (Schwab's "Portfolio Insights,"
+for one public example) disclaim their own AI features even though they
+_are_ licensed — if a fully-licensed broker keeps their AI on the
+"explains, doesn't recommend" side of the line, an FYP with no license at
+all has no basis to do otherwise.
+
+This rule is not negotiable by feature pressure later in the project. If
+a future idea seems to require Fincue to tell a user what to do with a
+specific holding, that idea needs to be reshaped into an explanation of
+the user's own situation instead, not implemented as written. See
+`decisions.md` ADR-019.
 practices to a project that handles personal financial data, because
 that's good engineering regardless of regulatory status — and because
 demonstrating that judgment is itself part of the FYP evaluation.
 
 ## 2. Threat model (summary)
 
-| Threat | Primary mitigation |
-|---|---|
-| Attacker gains a valid session and reads another user's data | Postgres Row-Level Security (RLS) — enforced at the database layer, not just in application code. See `docs/database.md` §4. |
-| Stolen device with an unlocked browser/app session | Biometric re-auth (WebAuthn/passkeys on web, platform biometrics on mobile) + session auto-timeout. See §4. |
-| Secrets leaked via committed `.env` files or client bundles | `.gitignore` excludes all `.env*` except `.env.example`; `SUPABASE_SERVICE_ROLE_KEY` and all LLM/Plaid keys are server-side only, never `NEXT_PUBLIC_*`. See §6. |
-| Sensitive financial data sent to a third-party LLM and retained/used for training | Function-calling design constraint: the LLM only ever receives question text and returns structured intent — never balances, transaction amounts, or account identifiers. See §5. |
-| SQL injection / arbitrary query execution | The NLP assistant never generates free-form SQL; it returns a constrained structured intent that the ai-engine maps to a fixed set of parameterized queries. See `docs/architecture.md` §4.2. |
+| Threat                                                                                                      | Primary mitigation                                                                                                                                                                                 |
+| ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Attacker gains a valid session and reads another user's data                                                | Postgres Row-Level Security (RLS) — enforced at the database layer, not just in application code. See `docs/database.md` §4.                                                                       |
+| Stolen device with an unlocked browser/app session                                                          | Biometric re-auth (WebAuthn/passkeys on web, platform biometrics on mobile) + session auto-timeout. See §4.                                                                                        |
+| Secrets leaked via committed `.env` files or client bundles                                                 | `.gitignore` excludes all `.env*` except `.env.example`; `SUPABASE_SERVICE_ROLE_KEY` and all LLM/Plaid keys are server-side only, never `NEXT_PUBLIC_*`. See §6.                                   |
+| Sensitive financial data sent to a third-party LLM and retained/used for training                           | Function-calling design constraint: the LLM only ever receives question text and returns structured intent — never balances, transaction amounts, or account identifiers. See §5.                  |
+| SQL injection / arbitrary query execution                                                                   | The NLP assistant never generates free-form SQL; it returns a constrained structured intent that the ai-engine maps to a fixed set of parameterized queries. See `docs/architecture.md` §4.2.      |
 | Malicious or malformed receipt image (e.g., a decompression bomb, or an attempt to exploit the OCR library) | File-type/size validation before processing (`docs/api.md` — 10 MB cap, allow-listed MIME types); OCR runs in the isolated `ai-engine` service, not in a process with direct database credentials. |
-| Compromised dependency (supply-chain attack) | Dependabot/`npm audit`/`pip-audit` in CI (see `docs/deployment.md`); pinned lockfiles committed. |
+| Compromised dependency (supply-chain attack)                                                                | Dependabot/`npm audit`/`pip-audit` in CI (see `docs/deployment.md`); pinned lockfiles committed.                                                                                                   |
 
 ## 3. Authentication & session management
 
@@ -42,8 +79,8 @@ demonstrating that judgment is itself part of the FYP evaluation.
   unlocked"):** on web, implemented via the **WebAuthn** API using
   platform authenticators (Face ID/Touch ID/Windows Hello) as a
   re-authentication gate layered on top of the Supabase session — the
-  Supabase session proves *who you are*, WebAuthn proves *you're still
-  physically present* before revealing the app. On mobile (Phase 10+),
+  Supabase session proves _who you are_, WebAuthn proves _you're still
+  physically present_ before revealing the app. On mobile (Phase 10+),
   `expo-local-authentication` provides the equivalent gate against the
   device's biometric APIs. Neither implementation should treat biometric
   success as a substitute for the underlying Supabase session — it's an
@@ -117,7 +154,7 @@ Practical checklist for anyone extending the assistant:
   (Vercel, Supabase, Render all terminate HTTPS by default) — no custom
   TLS handling is needed or should be built.
 - **At rest:** Supabase's underlying Postgres storage is encrypted at
-  rest by the platform. For an additional layer on the *most* sensitive
+  rest by the platform. For an additional layer on the _most_ sensitive
   fields (e.g., a linked bank account number if Plaid/Phase 2 is
   implemented), consider column-level encryption via Postgres's
   `pgcrypto` extension, decrypting only in the `ai-engine` service that
