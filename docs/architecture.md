@@ -160,11 +160,11 @@ fincue/
 
 ## 3. Environments
 
-| Environment | Web | Database | ai-engine |
-|---|---|---|---|
-| **Local dev** | `next dev` on `localhost:3000` | Local Supabase CLI stack, or a dev Supabase project | `uvicorn` on `localhost:8000` |
-| **Staging** (optional, Phase 2) | Vercel preview deployment (automatic per-PR) | A second free Supabase project | A second free Render service |
-| **Production/demo** | Vercel production deployment | Primary Supabase project | Primary Render (or HF Spaces) deployment |
+| Environment                     | Web                                          | Database                                            | ai-engine                                |
+| ------------------------------- | -------------------------------------------- | --------------------------------------------------- | ---------------------------------------- |
+| **Local dev**                   | `next dev` on `localhost:3000`               | Local Supabase CLI stack, or a dev Supabase project | `uvicorn` on `localhost:8000`            |
+| **Staging** (optional, Phase 2) | Vercel preview deployment (automatic per-PR) | A second free Supabase project                      | A second free Render service             |
+| **Production/demo**             | Vercel production deployment                 | Primary Supabase project                            | Primary Render (or HF Spaces) deployment |
 
 Given the free-tier project caps (2 Supabase projects, per
 `docs/deployment.md`), most teams will use **one** Supabase project for
@@ -242,7 +242,7 @@ reasoning behind this choice.
    wrapper.
 2. **Sync rules:** a PowerSync "sync rules" configuration (YAML, hosted
    alongside the PowerSync Service) defines which rows of which Postgres
-   tables replicate to which authenticated user. This works *alongside*,
+   tables replicate to which authenticated user. This works _alongside_,
    not instead of, the RLS policies in `docs/database.md` — RLS remains
    the authorization boundary for any direct Postgres access, sync rules
    scope what PowerSync replicates to a given device.
@@ -258,7 +258,7 @@ reasoning behind this choice.
    handling that is now PowerSync's, not ours to maintain.
 4. **One implementation, two platforms:** both `apps/web` and
    `apps/mobile` (Phase 10+) use PowerSync's respective client SDKs
-   against the *same* sync rules and the *same* backend connection. This
+   against the _same_ sync rules and the _same_ backend connection. This
    is the direct payoff of adopting PowerSync now instead of retrofitting
    sync when mobile development starts — there is no second sync
    implementation to write later.
@@ -274,6 +274,55 @@ behavior Supabase's free tier has (see `docs/deployment.md`). Rather than
 building a second keep-alive mechanism, the one already required for
 Supabase is extended to cover PowerSync too.
 
+## 6. Market data & portfolio insights pipeline
+
+Supports the wealth-building stories in `docs/PRD.md` §4.4. This is the
+one subsystem in Fincue where the boundary between deterministic code and
+AI output is a compliance requirement, not just an engineering
+preference — read `docs/security.md` §1.1 before touching anything here.
+
+```mermaid
+flowchart LR
+    PROVIDER["Alpha Vantage / CoinGecko<br/>(free tier, ~25 req/day)"]
+    INGEST["Scheduled ingestion<br/>(GitHub Actions, daily)"]
+    VALIDATE["Normalize & validate<br/>(sanity range, staleness flag)"]
+    STORE[("market_data_cache +<br/>historical_prices")]
+    CALC["Deterministic calculations<br/>(valuation, returns, volatility,<br/>drawdown, goal contribution)"]
+    RISK["Risk & analytics layer<br/>(concentration, risk-profile<br/>comparison — still deterministic)"]
+    AI["AI interpretation<br/>(Gemini/Groq — explains only,<br/>never recomputes, never recommends)"]
+    OUT["User output<br/>(always labeled informational)"]
+
+    PROVIDER --> INGEST --> VALIDATE --> STORE
+    STORE --> CALC --> RISK --> AI --> OUT
+    RISK -. "profile input" .-> PROFILE[("risk_profiles")]
+    PROFILE -.-> RISK
+```
+
+**Why ingestion is scheduled, not per-request:** the realistic free-tier
+budget (~25 requests/day) makes live-lookup-per-viewer architecturally
+impossible, which turns out to be the same thing the compliance framing
+already requires — prices are periodically refreshed and timestamped,
+never described as real-time. One fetch per symbol per day, cached in
+Postgres, serves every user holding that symbol; see
+`docs/database.md` §7 for the schema and `docs/ml-strategy.md` §6 for
+the provider choice and reasoning.
+
+**Why the pipeline has five stages before AI ever runs:** each stage
+exists to keep a specific kind of error out of what the user eventually
+sees. Validation catches a bad price before it reaches a calculation.
+Deterministic calculation means "what's this portfolio worth" is always
+a plain, tested function's output, reproducible and auditable, never a
+number an LLM generated. The risk layer compares that output against a
+user's _stated_ profile (`risk_profiles`, a real table, not a paragraph
+in a prompt) using plain rules. Only once all of that has produced a
+concrete, correct figure does AI get involved at all — and its only job
+is turning that figure into a sentence a person can understand quickly,
+never generating a new figure or a directive. This is the same
+discipline already governing the NLP assistant (§4.2) and every ML
+feature in `docs/ml-strategy.md`, applied to the one domain where the
+consequence of skipping it isn't just a wrong number, but a
+professional-responsibility problem — see `decisions.md` ADR-019.
+
 ## 7. Containerization
 
 `services/ai-engine` is containerized with a single Dockerfile;
@@ -286,7 +335,7 @@ libraries and OpenCV bindings that behave differently across operating
 systems), and a container pins that environment identically for every
 teammate and for whichever host ends up running it. It's also
 forward-compatible with the still-open hosting decision in
-`docs/deployment.md` — Google Cloud Run *requires* a container image, so
+`docs/deployment.md` — Google Cloud Run _requires_ a container image, so
 containerizing now means that door stays open regardless of when (or
 whether) that decision is revisited, rather than needing to retrofit a
 Dockerfile later under time pressure.
@@ -294,7 +343,7 @@ Dockerfile later under time pressure.
 Why not the web app: Vercel's native build pipeline already builds and
 deploys Next.js without a container, and wrapping it in one would add a
 layer of complexity with no corresponding benefit — Vercel's platform
-*is* the reproducible environment there.
+_is_ the reproducible environment there.
 
 One dependency worth knowing about regardless of this decision: the
 Supabase CLI's local development stack (`supabase start`) already runs
@@ -305,7 +354,7 @@ own deployment, rather than leaving it as an implicit, unexamined one.
 
 ## 8. Why not put everything behind Vercel serverless functions?
 
-Considered and rejected as the *sole* backend (a hybrid is still used for
+Considered and rejected as the _sole_ backend (a hybrid is still used for
 thin, fast operations): Vercel Hobby functions are capped at a short
 execution duration and are billed/limited on a per-invocation and
 GB-hours basis; heavier ML inference (OCR, embedding generation) is a poor
