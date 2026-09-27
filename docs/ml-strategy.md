@@ -45,8 +45,8 @@ bag-of-words features, and reported **93.6% accuracy** using embeddings
 with a supervised XGBoost classifier on short financial transaction
 text — a strong, recent, directly-relevant benchmark to cite as validation
 of this approach and to compare your own results against.
-(Source: *"A Web-Based Intelligent System for Automatic Classification of
-Personal Expenses,"* International Journal of Engineering and Information
+(Source: _"A Web-Based Intelligent System for Automatic Classification of
+Personal Expenses,"_ International Journal of Engineering and Information
 Technology, 2026 — search for the paper title if the direct link changes.)
 A similarly-scoped open-source capstone project, `fin-classifier` on
 Hugging Face, took a DistilBERT fine-tuning approach to the same problem
@@ -56,11 +56,11 @@ embeddings-based approach for a first version.
 
 **Datasets (free, Kaggle):**
 
-| Dataset | What it gives you | Link |
-|---|---|---|
-| "Customer Transaction Dataset" (bkcoban) | Merchant name + category pairs — the most directly useful for training merchant → category classification. | `kaggle.com/datasets/bkcoban/customer-transactions` |
-| "My Expenses Data" (Tharun Prabu) | Realistic personal transaction notes + category/subcategory labels, income vs. expense flag. | Search "My Expenses Data Tharun Prabu" on Kaggle |
-| "Personal Budget Transactions Dataset" (ismetsemedov) | Smaller, clean date/category/amount dataset — good for the forecasting/behavioral side, not just categorization. | Search on Kaggle by name |
+| Dataset                                               | What it gives you                                                                                                | Link                                                |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| "Customer Transaction Dataset" (bkcoban)              | Merchant name + category pairs — the most directly useful for training merchant → category classification.       | `kaggle.com/datasets/bkcoban/customer-transactions` |
+| "My Expenses Data" (Tharun Prabu)                     | Realistic personal transaction notes + category/subcategory labels, income vs. expense flag.                     | Search "My Expenses Data Tharun Prabu" on Kaggle    |
+| "Personal Budget Transactions Dataset" (ismetsemedov) | Smaller, clean date/category/amount dataset — good for the forecasting/behavioral side, not just categorization. | Search on Kaggle by name                            |
 
 **Note on Kaggle's terms:** don't commit these datasets to the repository
 (see `services/ai-engine/datasets/README.md`) — fetch them at
@@ -121,6 +121,7 @@ on Hugging Face Datasets (`Voxel51/scanned_receipts`), which avoids the
 original competition site's registration friction.
 
 **Phased rollout:**
+
 1. **MVP:** PaddleOCR raw text + a regex/heuristic layer (e.g., "the line
    matching `TOTAL|AMOUNT DUE` followed by a currency-formatted number" for
    totals; the first non-empty line for merchant name; a date-pattern
@@ -160,7 +161,7 @@ transaction history, not a shared corpus.
 relative to an individual's own baseline spending — a model trained on
 population-wide data would flag "unusual for the average person," not
 "unusual for you," which is the wrong question. Per-user, mostly-rule-based
-detection is not a simpler cop-out here; it is the *correct* approach.
+detection is not a simpler cop-out here; it is the _correct_ approach.
 
 ## 4. Overspending prediction & cash-flow forecasting
 
@@ -193,7 +194,7 @@ not text-to-SQL.** This is as much a security design as an ML one — see
    `sum_by_category`, `compare_periods`, `goal_progress`,
    `budget_remaining`, etc., each with typed parameters like
    `category`, `date_range`).
-2. The LLM's *only* job is mapping natural language to one of these
+2. The LLM's _only_ job is mapping natural language to one of these
    structured intents — it never receives, and does not need, any actual
    financial figures.
 3. The `ai-engine` executes a **fixed, parameterized query** for that
@@ -212,37 +213,141 @@ disclosed trade-off for an MVP (see `docs/PRD.md`, "narrow scope").
 
 **LLM provider choice (free tier):**
 
-| Provider | Why | Rough free limits (verify before relying — see `docs/deployment.md`) |
-|---|---|---|
-| **Gemini API** (Google AI Studio) — primary | No card required; generous daily quota for a single-user-at-a-time demo workload. | ~1,500 req/day (Gemini 2.0 Flash) / ~500 req/day (2.5 Flash), ~15 RPM |
-| **Groq** — fallback | No card required; extremely low latency (custom LPU hardware), good for a snappy live demo. | ~30 req/min, daily token cap, varies by model (Llama 3.3 70B and similar open models) |
+| Provider                                    | Why                                                                                         | Rough free limits (verify before relying — see `docs/deployment.md`)                  |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| **Gemini API** (Google AI Studio) — primary | No card required; generous daily quota for a single-user-at-a-time demo workload.           | ~1,500 req/day (Gemini 2.0 Flash) / ~500 req/day (2.5 Flash), ~15 RPM                 |
+| **Groq** — fallback                         | No card required; extremely low latency (custom LPU hardware), good for a snappy live demo. | ~30 req/min, daily token cap, varies by model (Llama 3.3 70B and similar open models) |
 
-Both are called with the *same* small, fixed function-calling prompt —
+Both are called with the _same_ small, fixed function-calling prompt —
 swapping providers should be a one-line config change in
 `services/ai-engine/app/clients/`, not a rewrite.
 
-## 6. Datasets & models — master reference table
+## 6. Portfolio & market insights
 
-| Purpose | Resource | Type | License/Access |
-|---|---|---|---|
-| Categorization training data | Kaggle: "Customer Transaction Dataset" (bkcoban) | Dataset | Kaggle terms — fetch via API, don't redistribute |
-| Categorization training data | Kaggle: "My Expenses Data" (Tharun Prabu) | Dataset | Kaggle terms |
-| Categorization training data | Kaggle: "Personal Budget Transactions Dataset" (ismetsemedov) | Dataset | Kaggle terms |
-| Categorization embeddings | `sentence-transformers/all-MiniLM-L6-v2` | Model | Open source (Apache 2.0), via Hugging Face |
-| Categorization validation benchmark | *"Web-Based Intelligent System for Automatic Classification of Personal Expenses"* (2026) | Academic paper | Public — cite, don't reproduce full text |
-| Categorization prior-art reference | `CodeBlooded-capstone/fin-classifier` on Hugging Face | Model + writeup | Apache 2.0 |
-| Receipt OCR engine | PaddleOCR | Open-source library | Apache 2.0 |
-| Receipt OCR evaluation | SROIE (ICDAR 2019), mirrored as `Voxel51/scanned_receipts` | Dataset | Research/competition dataset — check current redistribution terms on the HF mirror before any commercial use |
-| Anomaly detection | scikit-learn `IsolationForest` | Library | Open source (BSD) |
-| Forecasting baseline | NumPy/statsmodels linear regression | Library | Open source |
-| Forecasting Phase-2 option | Meta's Prophet | Library | Open source (MIT) |
-| NLP assistant | Gemini API (Google AI Studio) | Hosted API, free tier | Google's terms — see privacy note below |
-| NLP assistant fallback | Groq API | Hosted API, free tier | Groq's terms |
-| Currency conversion | `@fawazahmed0/currency-api` | Hosted API, free, no key, unlimited | Open source, CDN-hosted (jsDelivr + Cloudflare Pages fallback) |
-| Currency conversion fallback | `open.er-api.com` (ExchangeRate-API's Open Access endpoint) | Hosted API, free, no key | Requires attribution |
-| Investment/account sync (Phase 2) | Plaid Sandbox (mock data) / Trial plan (up to 10 real Production Items, US/CA, since Apr 2026) | Hosted API | Plaid's terms — see `docs/PRD.md` non-goals |
+This section governs the "sync investment portfolios" / net-worth /
+retirement-projection features from `docs/PRD.md` §4.4 — the one part of
+Fincue where the AI/deterministic boundary is a compliance requirement,
+not just good engineering. Read `docs/security.md` §1.1 before extending
+anything here. See `decisions.md` ADR-019 through ADR-022 for the full
+reasoning.
 
-## 7. Privacy considerations (see also `docs/security.md` §5)
+**The pipeline, and why each stage exists:**
+
+```
+Data Provider → Ingestion → Normalization & Validation →
+Current & Historical Data Store → Deterministic Calculations →
+Risk & Analytics Layer → AI Interpretation → User Output
+```
+
+1. **Data provider:** Alpha Vantage's free tier — no card, but a real
+   constraint of roughly 25 requests/day. This isn't a limitation to work
+   around, it's the reason the architecture is periodic-refresh-and-cache
+   rather than live-lookup-per-request, which is also the _honest_
+   framing regardless of the rate limit (see point 2 below). Crypto
+   holdings, if supported, use CoinGecko's free tier separately, since it
+   doesn't share Alpha Vantage's quota.
+2. **Never call this "real-time."** Every price shown carries a
+   timestamp and a source. The ingestion job fetches once per symbol per
+   refresh cycle (daily is the realistic MVP cadence, given the request
+   budget) and writes to the cache below — every user's portfolio
+   valuation reads from that shared cache, not from a fresh API call per
+   viewer. This is what makes the free tier viable at all: one fetch per
+   symbol per day serves every user holding that symbol.
+3. **Normalization & validation:** a fetched price is checked against a
+   sanity range (e.g., not zero, not off by an order of magnitude from
+   the last known price) before being trusted; a failed check or a
+   missing symbol marks that holding's data `stale` rather than silently
+   showing an old number as current. `docs/database.md` §7 has the
+   schema for this.
+4. **Current & historical store:** daily OHLC-style price rows per
+   symbol, kept for as long as storage allows (Supabase's 500 MB free-tier
+   cap is the practical ceiling here — see `docs/deployment.md`). This is
+   what makes volatility, drawdown, and trend analysis possible without
+   a second data provider.
+5. **Deterministic calculations — never the LLM's job:** portfolio
+   value, unrealized gain/loss, time-weighted returns, volatility
+   (standard deviation of returns over a window), maximum drawdown,
+   and goal-progress contribution from investment holdings are all
+   plain, tested functions — see `docs/testing-strategy.md` §8. This is
+   the same principle already governing every other calculation in this
+   project (ADR-006, ADR-011, ADR-012), applied here because it's both
+   correct engineering and the concrete mechanism that keeps AI out of
+   anything resembling financial calculation.
+6. **Risk & analytics layer, still deterministic:** a short onboarding
+   questionnaire captures a stated risk tolerance and investment horizon
+   (`risk_profiles` table, `docs/database.md` §7) — stored as an
+   explicit, auditable input, not folded into an LLM prompt as
+   unstructured text. Concentration (% of portfolio in one holding/
+   sector), and a simple flag for "this holding's historical volatility
+   is notably higher than the profile's stated tolerance," are computed
+   here as plain rules against the stored profile — not inferred fresh by
+   an LLM each time.
+7. **AI interpretation — explain and contextualize, never recommend:**
+   the LLM's only job is turning the deterministic outputs above into
+   plain language, in the same function-calling/bounded-intent pattern
+   already used for the NLP assistant (§5) — it receives computed
+   figures (this holding's YTD return, this portfolio's concentration
+   percentage, the stated risk profile) and produces a sentence
+   explaining what they mean, never a fresh calculation and never a
+   directive. Modeled directly on Charles Schwab's own "Portfolio
+   Insights" AI feature, which — despite Schwab being a fully licensed
+   broker — explicitly disclaims its AI output as "not... advice...
+   provided for informational and educational purposes only." An
+   unlicensed FYP has no basis to be less careful than a licensed broker
+   is with the identical kind of feature. Concretely: "your tech holdings
+   are 40% of this portfolio, above the 20–25% range often cited as
+   diversified" is in scope; "you should rebalance out of tech" is not,
+   regardless of how the prompt is worded.
+8. **Scenario/forecasting, if built at all (Phase 2/Stretch):** any
+   projection is a historical-data-driven scenario (e.g., "if this
+   portfolio had grown at its trailing 5-year average return") with the
+   methodology stated next to the number, never presented as a
+   prediction of future prices. This is the same deterministic-first
+   principle as cash-flow forecasting in §4 — a documented statistical
+   method, evaluated, not an unexplained AI output.
+
+**Scoping (see `docs/PRD.md` §4.4 for the full table):**
+
+| Capability                                                     | Phase                                      |
+| -------------------------------------------------------------- | ------------------------------------------ |
+| Manual holdings entry, valuation from cached prices, gain/loss | MVP                                        |
+| Net worth including investment accounts                        | MVP (already scoped this way)              |
+| Historical price store, volatility/drawdown analytics          | Phase 2                                    |
+| Risk profile questionnaire + concentration/mismatch flags      | Phase 2                                    |
+| AI-generated portfolio insight summaries (Schwab-pattern)      | Phase 2                                    |
+| Goal progress auto-updating from investment values             | Phase 2                                    |
+| Scenario/backtest-style projections                            | Stretch                                    |
+| Plaid-based automatic holdings sync                            | Stretch (already scoped this way, ADR-009) |
+
+Nothing here is guessed at beyond what's decided: no specific accuracy
+figure, forecasting model, or additional data provider is committed to
+until it's actually evaluated — this section defines the _shape_ of the
+system, not results that don't exist yet.
+
+## 7. Datasets & models — master reference table
+
+| Purpose                                                   | Resource                                                                                       | Type                                | License/Access                                                                                               |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Categorization training data                              | Kaggle: "Customer Transaction Dataset" (bkcoban)                                               | Dataset                             | Kaggle terms — fetch via API, don't redistribute                                                             |
+| Categorization training data                              | Kaggle: "My Expenses Data" (Tharun Prabu)                                                      | Dataset                             | Kaggle terms                                                                                                 |
+| Categorization training data                              | Kaggle: "Personal Budget Transactions Dataset" (ismetsemedov)                                  | Dataset                             | Kaggle terms                                                                                                 |
+| Categorization embeddings                                 | `sentence-transformers/all-MiniLM-L6-v2`                                                       | Model                               | Open source (Apache 2.0), via Hugging Face                                                                   |
+| Categorization validation benchmark                       | _"Web-Based Intelligent System for Automatic Classification of Personal Expenses"_ (2026)      | Academic paper                      | Public — cite, don't reproduce full text                                                                     |
+| Categorization prior-art reference                        | `CodeBlooded-capstone/fin-classifier` on Hugging Face                                          | Model + writeup                     | Apache 2.0                                                                                                   |
+| Receipt OCR engine                                        | PaddleOCR                                                                                      | Open-source library                 | Apache 2.0                                                                                                   |
+| Receipt OCR evaluation                                    | SROIE (ICDAR 2019), mirrored as `Voxel51/scanned_receipts`                                     | Dataset                             | Research/competition dataset — check current redistribution terms on the HF mirror before any commercial use |
+| Anomaly detection                                         | scikit-learn `IsolationForest`                                                                 | Library                             | Open source (BSD)                                                                                            |
+| Forecasting baseline                                      | NumPy/statsmodels linear regression                                                            | Library                             | Open source                                                                                                  |
+| Forecasting Phase-2 option                                | Meta's Prophet                                                                                 | Library                             | Open source (MIT)                                                                                            |
+| NLP assistant                                             | Gemini API (Google AI Studio)                                                                  | Hosted API, free tier               | Google's terms — see privacy note below                                                                      |
+| NLP assistant fallback                                    | Groq API                                                                                       | Hosted API, free tier               | Groq's terms                                                                                                 |
+| Currency conversion                                       | `@fawazahmed0/currency-api`                                                                    | Hosted API, free, no key, unlimited | Open source, CDN-hosted (jsDelivr + Cloudflare Pages fallback)                                               |
+| Currency conversion fallback                              | `open.er-api.com` (ExchangeRate-API's Open Access endpoint)                                    | Hosted API, free, no key            | Requires attribution                                                                                         |
+| Investment/account sync (Phase 2)                         | Plaid Sandbox (mock data) / Trial plan (up to 10 real Production Items, US/CA, since Apr 2026) | Hosted API                          | Plaid's terms — see `docs/PRD.md` non-goals                                                                  |
+| Current/historical market data (Phase 2)                  | Alpha Vantage free tier (~25 req/day)                                                          | Hosted API                          | Alpha Vantage's terms — cache aggressively, see §6                                                           |
+| Crypto price data (Phase 2, if crypto holdings supported) | CoinGecko free tier                                                                            | Hosted API                          | CoinGecko's terms                                                                                            |
+
+## 8. Privacy considerations (see also `docs/security.md` §5)
 
 - Only the NLP assistant's question text ever reaches a third-party LLM —
   no transaction amounts, merchant names tied to real activity, or account
@@ -256,7 +361,7 @@ swapping providers should be a one-line config change in
   that leaves the project's own database, even for research purposes,
   without explicit consent flow.
 
-## 8. Training/retraining pipeline (once implemented)
+## 9. Training/retraining pipeline (once implemented)
 
 1. `services/ai-engine/datasets/download_*.py` fetches the source
    datasets.

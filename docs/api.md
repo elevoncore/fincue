@@ -63,6 +63,7 @@ receipt.
 | `account_id` | string (uuid) | which account this will post to, for currency context |
 
 **Response `200`:**
+
 ```json
 {
   "merchant_raw_text": "SHNG STAR MART #4471",
@@ -78,6 +79,7 @@ receipt.
   "requires_review": true
 }
 ```
+
 `requires_review` is `true` whenever any field's confidence is below a
 configurable threshold — the frontend should always show the review screen
 in that case rather than silently trusting a low-confidence extraction.
@@ -88,10 +90,13 @@ Categorizes a single merchant string (used for manual entry, and
 internally by the OCR endpoint above for each line item).
 
 **Request:**
+
 ```json
-{ "merchant_text": "UBER *TRIP HELP.UBER.COM", "amount": 12.40 }
+{ "merchant_text": "UBER *TRIP HELP.UBER.COM", "amount": 12.4 }
 ```
+
 **Response `200`:**
+
 ```json
 {
   "category": "Transport",
@@ -105,9 +110,11 @@ internally by the OCR endpoint above for each line item).
 
 Records a user's correction for retraining (writes to `ml_feedback`, see
 `docs/database.md`).
+
 ```json
 { "transaction_id": "uuid", "predicted_category_id": "uuid", "corrected_category_id": "uuid" }
 ```
+
 Response: `204 No Content`.
 
 ### `POST /v1/assistant/query`
@@ -117,10 +124,13 @@ The NLP assistant. See `docs/ml-strategy.md` and
 design constraint this endpoint implements.
 
 **Request:**
+
 ```json
 { "question": "How much did I spend on dining out last weekend?" }
 ```
+
 **Response `200`:**
+
 ```json
 {
   "answer": "You spent $86.40 on Dining Out last weekend (Sat–Sun, Sep 6–7).",
@@ -132,9 +142,11 @@ design constraint this endpoint implements.
   "supporting_transaction_ids": ["uuid1", "uuid2", "uuid3"]
 }
 ```
+
 **Response `422`** (question doesn't match a supported intent — see
 `docs/ml-strategy.md` for why the assistant intentionally supports a
 bounded set of intents rather than open-ended chat):
+
 ```json
 { "error": { "code": "unsupported_intent", "message": "I can answer spending, budget, and goal-progress questions, but not that one yet." } }
 ```
@@ -146,6 +158,7 @@ is triggered on a schedule for) an anomaly pass over a user's recent
 transactions.
 
 **Response `200`:**
+
 ```json
 {
   "anomalies": [
@@ -165,19 +178,80 @@ transactions.
 }
 ```
 
+### `GET /v1/portfolio/valuation`
+
+Deterministic — see `docs/ml-strategy.md` §6. No AI involvement in this
+endpoint at all; every figure is a plain calculation against cached
+market data.
+
+**Response `200`:**
+
+```json
+{
+  "total_value": 8240.5,
+  "total_cost_basis": 7100.0,
+  "unrealized_gain_loss": 1140.5,
+  "as_of": "2026-09-20T06:00:00Z",
+  "stale_data_used": false,
+  "holdings": [
+    {
+      "symbol": "VOO",
+      "quantity": 10,
+      "current_price": 512.3,
+      "price_as_of": "2026-09-20",
+      "price_source": "alpha_vantage",
+      "current_value": 5123.0,
+      "unrealized_gain_loss": 623.0
+    }
+  ]
+}
+```
+
+`stale_data_used: true` means at least one holding's price fell back to a
+carried-forward value after a failed refresh (`docs/database.md` §7) —
+the client should surface this, not hide it.
+
+### `POST /v1/portfolio/insights`
+
+The AI-interpretation step — and only that step. Takes the deterministic
+output above (already computed, already validated) and returns plain-
+language explanation. See `docs/security.md` §1.1: this endpoint cannot
+return a buy/sell/hold directive by design, and any response failing
+that check server-side is rejected rather than forwarded to the client
+(see `docs/testing-strategy.md` §9).
+
+**Request:**
+
+```json
+{ "portfolio_valuation": { "...": "the object from GET /v1/portfolio/valuation above" } }
+```
+
+**Response `200`:**
+
+```json
+{
+  "summary": "Your portfolio is up $1,140.50 (16%) since cost basis, driven mostly by VOO. It's 62% concentrated in VOO — worth knowing since your stated risk profile is 'conservative'.",
+  "concentration_flags": [{ "symbol": "VOO", "percent_of_portfolio": 62, "note": "Above typical single-holding diversification guidance." }],
+  "risk_profile_comparison": "moderate volatility relative to your stated 'conservative' tolerance",
+  "disclaimer": "Informational only. Not a recommendation to buy, sell, or hold any security."
+}
+```
+
+The `disclaimer` field is not optional and not client-decorative text —
+it's part of the contract, always populated, always rendered.
+
 ### `GET /v1/forecast/cashflow?horizon_days=30`
 
 **Response `200`:**
+
 ```json
 {
-  "safe_to_spend_today": 214.30,
+  "safe_to_spend_today": 214.3,
   "projected_balance": [
-    { "date": "2026-09-13", "balance": 1820.10 },
+    { "date": "2026-09-13", "balance": 1820.1 },
     { "date": "2026-09-14", "balance": 1795.44 }
   ],
-  "upcoming_known_bills": [
-    { "name": "Rent", "amount": 650.00, "due_date": "2026-10-01" }
-  ]
+  "upcoming_known_bills": [{ "name": "Rent", "amount": 650.0, "due_date": "2026-10-01" }]
 }
 ```
 
@@ -185,6 +259,7 @@ transactions.
 
 Unauthenticated liveness check for the scheduled keep-alive ping described
 in `docs/deployment.md`.
+
 ```json
 { "status": "ok", "version": "0.1.0" }
 ```
