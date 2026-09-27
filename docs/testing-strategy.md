@@ -18,13 +18,13 @@ without proportionally increasing confidence.
 
 ## 2. Tools
 
-| Layer | Tool | Notes |
-|---|---|---|
-| Web unit/component | [Vitest](https://vitest.dev/) + [React Testing Library](https://testing-library.com/) | Fast, works well with Next.js/Vite tooling. |
-| Web e2e | [Playwright](https://playwright.dev/) | Cross-browser, good CI support, free. |
-| ai-engine unit/integration | [pytest](https://docs.pytest.org/) | Standard for FastAPI projects. |
-| ai-engine ML evaluation | pytest + a fixed held-out dataset split | Treat model accuracy as a regression-testable metric, not just a notebook printout — see §4. |
-| API contract | pytest (ai-engine) hitting a local FastAPI `TestClient`, plus a Postman/Bruno collection mirroring `docs/api.md` for manual/exploratory testing | |
+| Layer                      | Tool                                                                                                                                            | Notes                                                                                        |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Web unit/component         | [Vitest](https://vitest.dev/) + [React Testing Library](https://testing-library.com/)                                                           | Fast, works well with Next.js/Vite tooling.                                                  |
+| Web e2e                    | [Playwright](https://playwright.dev/)                                                                                                           | Cross-browser, good CI support, free.                                                        |
+| ai-engine unit/integration | [pytest](https://docs.pytest.org/)                                                                                                              | Standard for FastAPI projects.                                                               |
+| ai-engine ML evaluation    | pytest + a fixed held-out dataset split                                                                                                         | Treat model accuracy as a regression-testable metric, not just a notebook printout — see §4. |
+| API contract               | pytest (ai-engine) hitting a local FastAPI `TestClient`, plus a Postman/Bruno collection mirroring `docs/api.md` for manual/exploratory testing |                                                                                              |
 
 ## 3. What to test first (priority order)
 
@@ -45,7 +45,7 @@ without proportionally increasing confidence.
 5. **NLP assistant intent parsing** — a fixed set of example questions per
    supported intent (see `docs/ml-strategy.md`), asserting the LLM's
    output maps to the correct structured intent. This is inherently a bit
-   flaky (LLM outputs vary) — assert on the *parsed intent structure*, not
+   flaky (LLM outputs vary) — assert on the _parsed intent structure_, not
    exact wording, and consider a small retry-on-malformed-output policy in
    the implementation itself, not just the test.
 6. **Auth flows and session timeout.**
@@ -105,3 +105,59 @@ Treat coverage percentage as a signal, not a goal to game:
 See `docs/deployment.md` §5 — `pnpm test` (web) and `pytest` (ai-engine)
 both run in the CI workflow on every pull request; a failing test blocks
 merge to `main`.
+
+## 8. Testing the market data & portfolio pipeline (separately from everything else)
+
+`docs/ml-strategy.md` §6 splits this pipeline into distinct stages
+specifically so each one can be tested for a different kind of
+correctness — treating it as one blob called "investment features" would
+hide exactly the failures that matter most here.
+
+- **Deterministic calculation accuracy:** portfolio valuation, gain/loss,
+  volatility, drawdown, and goal-contribution math get the same
+  fixed-point/exact-value testing discipline as the money math in §3 —
+  known input prices and holdings in, an exactly-known expected output
+  out. These are pure functions; there's no excuse for testing them
+  loosely.
+- **Market data validation:** unit tests for the normalization layer
+  (`docs/database.md` §7) using deliberately bad fixture data — a zero
+  price, a price 100x the previous day's, a missing symbol — asserting
+  the `is_stale` flag is set correctly and a bad value never silently
+  reaches a valuation calculation.
+- **Data freshness / staleness propagation:** an integration test
+  confirming `stale_data_used` on `portfolio_valuation_snapshots`
+  correctly reflects an underlying stale price, and that the API
+  response (`docs/api.md`'s `GET /v1/portfolio/valuation`) surfaces it —
+  a freshness bug that never reaches the response is as bad as not
+  having the flag at all.
+- **AI output validation (the compliance-critical test):** every
+  response from `POST /v1/portfolio/insights` is checked, in an
+  automated test, against a deny-list of directive language ("buy",
+  "sell", "should invest", "should sell", equivalents) before being
+  accepted as passing — this is not a style-guide suggestion, it's the
+  automated enforcement of `docs/security.md` §1.1. A response that
+  fails this check is a test failure, not a note for later. Alongside
+  this: a fixed set of example portfolios with known correct
+  concentration/volatility figures, asserting the AI's _summary_ doesn't
+  contradict the _deterministic_ numbers it was given (a hallucination
+  check, distinct from the directive-language check above).
+- **Scenario/forecasting evaluation (if built):** any scenario/backtest
+  feature gets evaluated against a documented methodology and a stated
+  error range on historical backtests — the same "evaluate, don't just
+  assert" discipline as §4, applied here because an unevaluated
+  projection is exactly the kind of unsubstantiated claim `docs/PRD.md`
+  and `docs/ml-strategy.md` §6 already commit to avoiding.
+
+## 9. Why AI output gets rejected server-side, not just prompted against
+
+Prompting an LLM to "never recommend a specific action" reduces how often
+it happens; it does not guarantee zero. `docs/api.md`'s
+`POST /v1/portfolio/insights` therefore runs the deny-list check from §8
+as a **server-side gate**, not just a system-prompt instruction — a
+response that fails it is discarded and replaced with a safe fallback
+("Portfolio summary unavailable — view your raw figures below") rather
+than ever reaching the client. This is the same "don't trust the model,
+verify the output" posture already applied to the NLP assistant's
+structured-intent parsing (`docs/architecture.md` §4.2) — extended here
+because the cost of a miss is categorically higher than a wrong chart
+label.
