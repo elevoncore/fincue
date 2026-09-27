@@ -1,8 +1,8 @@
 # User Guide
 
-*This document is written for the person using the app, not the developer
+_This document is written for the person using the app, not the developer
 — it doubles as a first draft of the in-app help content. Screenshots
-referenced below should be added to `docs/assets/` once the UI exists.*
+referenced below should be added to `docs/assets/` once the UI exists._
 
 ## Getting started
 
@@ -75,6 +75,14 @@ say so rather than guessing.
 - If a month is tight, Fincue may suggest **pausing** a long-term
   goal's contribution temporarily rather than missing a bill — you always
   choose whether to accept the suggestion.
+- If you've added investment holdings, Fincue shows their value using
+  periodically-updated prices (never labeled as live/real-time — you'll
+  always see when a price was last refreshed) and can explain what's
+  driving your portfolio's performance in plain language. **This is
+  informational commentary about your own holdings, never a
+  recommendation to buy, sell, or hold anything** — every screen showing
+  it says so, and that's a deliberate limit, not a missing feature. See
+  `docs/security.md` §1.1 if you want the reasoning.
 
 ## Your Financial Health Score
 
@@ -115,3 +123,13 @@ service to understand what you're asking — but your actual financial
 figures (balances, transaction amounts, account details) never leave
 Fincue's own database to do so. See `docs/security.md` if you want
 the technical detail.
+
+## Not financial advice
+
+Fincue is a personal tracking and analysis tool, not a financial adviser.
+Anything it shows you about your investments — value, performance,
+concentration, risk — is a description of your own data, not a
+recommendation. Decisions about what to buy, sell, or hold are always
+yours to make, with a professional adviser if you want one; Fincue
+doesn't have the license to be that adviser, and doesn't try to act like
+one.
