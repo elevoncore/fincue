@@ -125,6 +125,11 @@ read has failed at its one job.
 
 ## 6. Coding standards (full detail in `CONTRIBUTING.md` and `docs/testing-strategy.md` — this is the summary that's easy to forget)
 
+Full detail in `docs/engineering-principles.md` — read it before writing
+any non-trivial module, not just this summary. The one rule that matters
+most: these principles manage complexity that's actually present: don't
+apply one where the complexity isn't there yet.
+
 - Conventional Commits. `pnpm` only, never `npm`/`yarn`. `ruff check` +
   `ruff format` for Python — no Black, don't reintroduce it.
 - Money math uses exact/fixed-point comparisons in tests, never floats

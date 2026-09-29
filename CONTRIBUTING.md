@@ -63,6 +63,10 @@ FYP final report.
 
 ## Code style
 
+Structural/design principles (SOLID, DRY, patterns actually used in this
+project, and — just as importantly — where not to apply them) are in
+`docs/engineering-principles.md`, not repeated here.
+
 - TypeScript/JS: Prettier (config lives in `packages/config` once
   populated) + ESLint. Run `pnpm format` before committing.
 - Python (`services/ai-engine`): `ruff` for both linting (`ruff check`)
